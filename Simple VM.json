@@ -4,6 +4,7 @@
   "parameters": {
     "adminUsername": {
       "type": "string",
+       "defaultValue": "TestAdmin",
       "metadata": {
         "description": "Username for the Virtual Machine."
       }
