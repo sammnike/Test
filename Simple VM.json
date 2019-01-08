@@ -22,7 +22,6 @@
     },
     "windowsOSVersion": {
       "type": "string",
-      "defaultValue": "2016-Datacenter",
       "allowedValues": [
         "2008-R2-SP1",
         "2012-Datacenter",
@@ -59,7 +58,7 @@
       "type": "Microsoft.Storage/storageAccounts",
       "name": "[variables('storageAccountName')]",
       "location": "[parameters('location')]",
-      "apiVersion": "2018-07-01",
+      "apiVersion": "2019-01-01",
       "sku": {
         "name": "Standard_LRS"
       },
@@ -70,7 +69,7 @@
       "type": "Microsoft.Network/publicIPAddresses",
       "name": "[variables('publicIPAddressName')]",
       "location": "[parameters('location')]",
-      "apiVersion": "2018-10-01",
+      "apiVersion": "2019-01-08",
       "properties": {
         "publicIPAllocationMethod": "Dynamic",
         "dnsSettings": {
@@ -82,7 +81,7 @@
       "type": "Microsoft.Network/virtualNetworks",
       "name": "[variables('virtualNetworkName')]",
       "location": "[parameters('location')]",
-      "apiVersion": "2018-10-01",
+      "apiVersion": "2019-01-08",
       "properties": {
         "addressSpace": {
           "addressPrefixes": [
@@ -103,7 +102,7 @@
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[variables('nicName')]",
       "location": "[parameters('location')]",
-      "apiVersion": "2018-10-01",
+      "apiVersion": "2019-01-01",
       "dependsOn": [
         "[resourceId('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]",
         "[resourceId('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
@@ -129,7 +128,7 @@
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[variables('vmName')]",
       "location": "[parameters('location')]",
-      "apiVersion": "2018-10-01",
+      "apiVersion": "2019-01-08",
       "dependsOn": [
         "[resourceId('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
         "[resourceId('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
