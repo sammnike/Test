@@ -1,0 +1,101 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "IAM Users and a Policy Mapping"
+Parameters: 
+  ApplicationID:
+    Type: String
+    Default: demotest
+    MinLength: 3
+    MaxLength: 30
+    AllowedPattern: "^[a-z0-9]*"
+    Description: Enter Application ID
+  IAMrole: 
+    Type: String
+    Default: true
+    Description: "Whether a role should be created for User"
+    AllowedValues: 
+      - True
+      - False
+    ConstraintDescription: "Must be true or false."
+  AccountNumber:
+    Type: Number
+    Default: 359319327701
+    Description: Enter AccountNumber
+  Policy:
+    Type: String
+    Default: demo-sysops-admin-policy
+    MinLength: 3
+    MaxLength: 50
+    Description: Enter Policy Name
+  IAMUser: 
+    Type: String
+    Default: "vijaykborkar@outlook.com"
+    Description: "enter The IAM User Name"
+Resources:  
+  IAMUser01:
+    Type: "AWS::IAM::User"
+    Description: IAM-Sysops-Admin-User
+    Properties: 
+      UserName: 
+        Ref: IAMUser 
+  IAMUserAccessKey:          
+    Type: "AWS::IAM::AccessKey"
+    Properties:
+      UserName: !Ref IAMUser01
+  IAMUserPolicy:
+    Type: "AWS::IAM::Policy"
+    Properties: 
+      PolicyName: "EC2-SSM-Access"
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement:        
+            Effect: Allow
+            Action: "*"
+            Resource: "*"
+      Users:
+        - !Ref IAMUser01
+      Roles:
+        - !Ref IAMRole1      
+  IAMRole1:
+   Type: "AWS::IAM::Role" 
+   Properties:       
+     RoleName: "IT-Admin-Role"
+     AssumeRolePolicyDocument: 
+       Statement: 
+         - Effect: Allow
+           Principal: 
+             Service:
+               - "ec2.amazonaws.com"
+               - "ssm.amazonaws.com"
+           Action: "sts:AssumeRole"
+     Path: "/"
+     ManagedPolicyArns: 
+       - arn:aws:iam::aws:policy/service-role/AmazonSSMAutomationRole
+       - arn:aws:iam::aws:policy/AdministratorAccess
+       
+Outputs:
+  IAMUserAccessKeyID:
+    Description: 'Exporting The Value of Ec2'
+    Value: !Ref IAMUserAccessKey
+    Export:
+      Name: !Join
+        - '-'
+        - - !Ref ApplicationID
+          - IAMUserAccessKeyID 
+  IAMUserSecretAccessKeyID:
+    Description: This Is the VPC Peer Id Created by the Template
+    Value: !GetAtt IAMUserAccessKey.SecretAccessKey
+    Export:
+      Name: !Join
+        - '-'
+        - - !Ref ApplicationID
+          - IAMUserSecretAccessKeyID
+  IAMPolicy:
+    Description: This Is the VPC Peer Id Created by the Template
+    Value: !Ref IAMUserPolicy
+    Export:
+      Name: !Join
+        - '-'
+        - - !Ref ApplicationID
+          - IAMPolicy         
+...  

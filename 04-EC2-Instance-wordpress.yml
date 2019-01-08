@@ -1,0 +1,818 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  AWS CloudFormation Sample Template Sample template EIP_With_Association: This
+  template shows how to associate an Elastic IP address with an Amazon EC2
+  instance - you can use this same technique to associate an EC2 instance with
+  an Elastic IP Address that is not created inside the template by replacing the
+  EIP reference in the AWS::EC2::EIPAssoication resource type with the IP
+  address of the external EIP. **WARNING** This template creates an Amazon EC2
+  instance and an Elastic IP Address. You will be billed for the AWS resources
+  used if you create a stack from this template.
+Parameters:
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: t2.small
+    AllowedValues:
+      - t1.micro
+      - t2.nano
+      - t2.micro
+      - t2.small
+      - t2.medium
+      - t2.large
+    ConstraintDescription: must be a valid EC2 instance type.
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instances
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+    Default: t2.small
+  SSHLocation:
+    Description: The IP address range that can be used to SSH to the EC2 instances
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 0.0.0.0/0
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  HTTPLocation:
+    Description: The IP address range that will access website on the EC2 instances
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 0.0.0.0/0
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  ImageId:
+    Type: String
+    Default: ami-40142d25
+    Description: It's an AWS Linux-AMI with preinstalled tools and packages
+  ApplicationID:
+    Type: String
+    Default: demotest
+    MinLength: 3
+    MaxLength: 30
+    AllowedPattern: "^[a-z0-9]*"
+    Description: Enter Application ID
+  Region:
+    Type: String
+    Default: us-east-2
+    Description: Region in which VPC will be launched
+    AllowedValues:
+      - us-east-2
+      - us-east-1
+  Environment:
+    Type: String
+    Default: Dev
+    MinLength: 1
+    MaxLength: 20
+    Description: Enter The Environment
+    AllowedValues:
+        - Dev
+        - OAT
+        - UAT
+        - Pre-Production
+        - Production 
+  BackUp:
+    Type: String
+    Default: yes
+    MinLength: 2
+    MaxLength: 5
+    AllowedPattern: "^[a-z]*"
+    AllowedValues:
+       - yes
+       - no
+    Description: Choose yes if you want to create Backup of the resource else enter no
+  EBSBackup:
+    Type: String
+    Default: yes
+    MinLength: 2
+    MaxLength: 5
+    AllowedPattern: "^[a-z]*"
+    AllowedValues:
+       - yes
+       - no
+    Description: Choose yes if you want to create EBS Backup of the resource else enter no 
+  AMIBackup:
+    Type: String
+    Default: yes
+    MinLength: 2
+    MaxLength: 5
+    AllowedPattern: "^[a-z]*"
+    AllowedValues:
+       - yes
+       - no
+    Description: Choose yes if you want to create AMI Backup of the resource else enter no 
+  ServerType:
+    Type: String
+    Default: Linux
+    MinLength: 3
+    MaxLength: 9
+    Description: Enter ServerType
+  RoleName:
+    Type: String
+    Default: IT-Admin-Role
+  LinuxParameter:
+    Type: String
+    Default: AmazonCloudWatch_Linux
+  ApplicationFunction:
+    Type: String
+    MinLength: 3
+    MaxLength: 26
+    Default: travel
+    Description: Select the key functionality of Application
+  Severity1:
+    Type: String
+    MinLength: 1
+    MaxLength: 12
+    Default: high
+    Description: 'The severity of Alarm'
+  ApplicationDescription:
+    Type: String
+    MinLength: 3
+    MaxLength: 30
+    Default: webapp
+    AllowedPattern: "^[a-zA-Z0-9]*"
+    Description: Enter Application descripion in few words
+Resources:
+ EC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceType
+      NetworkInterfaces:
+         - AssociatePublicIpAddress: "true"
+           GroupSet:
+            - !Ref SecurityGroup
+           DeviceIndex: '0'
+           DeleteOnTermination: 'true'
+           SubnetId: 
+                Fn::ImportValue: !Join [ "-" , [ !Ref Environment , !Ref Region , 'subnet-id-az1' ] ]
+      KeyName: !Ref KeyName
+      ImageId: !Ref ImageId
+      IamInstanceProfile: !Ref IamInstanceProfile
+      Tags:            
+        - Key: "Name"
+          Value: !Join 
+            - '-'
+            - - !Ref ApplicationID
+              - !Ref Environment
+              - webserver
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: AppID
+          Value: !Ref ApplicationID
+        - Key: BackUp
+          Value: !Ref BackUp
+        - Key : EBSBackup
+          Value: !Ref  EBSBackup
+        - Key: AMIBackup
+          Value: !Ref AMIBackup
+      UserData: 
+        Fn::Base64:
+            !Sub |
+                #!/bin/bash
+                sudo yum install -y httpd24 php56 mysql55-server php56-mysqlnd wget unzip zip
+                sudo service httpd start
+                sudo chkconfig httpd on
+                sudo echo "<?php phpinfo(); ?>" > /var/www/html/phpinfo.php
+                sudo service mysqld start
+                sudo chkconfig mysqld on
+                sudo wget -qO- https://wordpress.org/latest.tar.gz | tar xvz -C /var/www/html/
+                sudo wget -O /var/www/html/wordpress/wp-config.php https://s3.us-east-2.amazonaws.com/mywordpressfolder/wp-config.php
+                sudo mysql -e "create user wordpress@'%' identified by 'Thunder@1234';"
+                sudo mysql -e "grant all on *.* to wordpress@'localhost' identified by 'Thunder@1234';"
+                sudo mysql -e "create database wordpressdb;"
+                sudo mysql -e "flush privileges;"
+                sudo find /var/www -type f -exec sudo chmod 0664 {} \; 
+                sudo /usr/bin/easy_install --script-dir /opt/aws/bin https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+                sudo wget https://s3.amazonaws.com/amazoncloudwatch-agent/linux/amd64/latest/AmazonCloudWatchAgent.zip
+                sudo unzip AmazonCloudWatchAgent.zip
+                ./install.sh
+                sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c ssm:${LinuxParameter} -s   
+ IamInstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties: 
+      Path: "/"
+      Roles: 
+         - !Ref RoleName
+ SecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: 
+        Fn::ImportValue: !Join [ "-" , [ !Ref ApplicationID , !Ref Environment , !Ref Region , 'vpc-id' ] ]
+      GroupDescription: Enable SSH-HTTP Ports
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: !Ref SSHLocation
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: !Ref HTTPLocation
+      Tags:
+        - Key: Name
+          Value: !Join 
+              - '-'
+              - - !Ref ApplicationID
+                - !Ref Environment
+                - 'webserver-sg'
+ IPAddress:
+    Type: 'AWS::EC2::EIP'
+ IPAssoc:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      InstanceId: !Ref EC2Instance
+      EIP: !Ref IPAddress
+ CPUAlarmHigh:
+   Type: AWS::CloudWatch::Alarm
+   Properties:
+    AlarmDescription: CPU High alarm of Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'cpu-alert' ] ]
+    MetricName: CPUUtilization
+    AlarmName: !Join [ "-" , [ !Ref Environment , ApplicationDescription, 'cpu' , !Ref Severity1 ] ] 
+    Namespace: AWS/EC2
+    Statistic: Maximum
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '70'
+    ComparisonOperator: GreaterThanThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+ NetworkPacketsOutHigh:
+   Type: AWS::CloudWatch::Alarm
+   Properties:
+    AlarmDescription: High Network Packets Out of Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'network-alert' ] ]
+    MetricName: NetworkPacketsOut
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'net-pkt-out' , !Ref Severity1 ] ] 
+    Namespace: AWS/EC2
+    Statistic: Maximum
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '1073741824'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+ NetworkPacketsInHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High Network Packets In of Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'network-alert' ] ]
+    MetricName: NetworkPacketsIn
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'net-pkt-in' , !Ref Severity1 ] ] 
+    Namespace: AWS/EC2
+    Statistic: Maximum
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '1073741824'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+ NetworkInHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High Network traffic In of Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'network-alert' ] ]
+    MetricName: NetworkIn
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'net-in' , !Ref Severity1 ] ] 
+    Namespace: AWS/EC2
+    Statistic: Average
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '1073741824'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+ NetworkOutHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High Network traffic Out of Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'network-alert' ] ]
+    MetricName: NetworkOut
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'net-out' , !Ref Severity1 ] ] 
+    Namespace: AWS/EC2
+    Statistic: Average
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '1073741824'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+ DiskWriteBytesHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High Disk Write Bytes of Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'disk-alert' ] ]
+    MetricName: DiskWriteBytes
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'disk-write-byte' , !Ref Severity1 ] ] 
+    Namespace: AWS/EC2
+    Statistic: Average
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '500000000'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+ DiskReadBytesHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High Disk Read Bytes of Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'disk-alert' ] ]
+    MetricName: DiskReadBytes
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'disk-read-byte' , !Ref Severity1 ] ] 
+    Namespace: AWS/EC2
+    Statistic: Average
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '100000000'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+ DiskReadOpsHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High Disk Read Operations on Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'disk-alert' ] ]
+    MetricName: DiskReadOps
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'disk-read-ops' , !Ref Severity1 ] ] 
+    Namespace: AWS/EC2
+    Statistic: Maximum
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '500000000'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+ DiskWriteOpsHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High Disk Write Operations on Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'disk-alert' ] ]
+    MetricName: DiskWriteOps
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'disk-write-ops' , !Ref Severity1 ] ] 
+    Namespace: AWS/EC2
+    Statistic: Maximum
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '500000000'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+ StatusCheckFailedHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High Status Check Failed of Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'status-alert' ] ]
+    MetricName: StatusCheckFailed
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'stat-chk-fail' , !Ref Severity1 ] ] 
+    Namespace: AWS/EC2
+    Statistic: Minimum
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '3'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+ StatusCheckFailedSystemHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High Status Check Failed for System of Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'status-alert' ] ]
+    MetricName: StatusCheckFailed_System
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'stat-chk-fail-sys' , !Ref Severity1 ] ] 
+    Namespace: AWS/EC2
+    Statistic: Minimum
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '3'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+ StatusCheckFailedInstanceHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High Status Check Failed for Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'status-alert' ] ]
+    MetricName: StatusCheckFailed_Instance
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'stat-chk-fail-Ins' , !Ref Severity1 ] ] 
+    Namespace: AWS/EC2
+    Statistic: Minimum
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '3'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+ diskinodesfreeHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High Disk Nodes free for an Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'disk-alert' ] ]
+    MetricName: disk_inodes_free
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'disk-inode-free' , !Ref Severity1 ] ] 
+    Namespace: CWAgent
+    Statistic: Maximum
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '6000000'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+            - Name: path
+              Value: '/'
+            - Name: device
+              Value: 'rootfs'
+            - Name: fstype
+              Value: 'rootfs'
+            - Name: ImageId
+              Value: !Ref ImageId
+            - Name: InstanceType
+              Value: !Ref InstanceType
+ diskusedpercentHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High Disk used in percent of Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'disk-alert' ] ]
+    MetricName: disk_used_percent
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'disk-percent' , !Ref Severity1 ] ] 
+    Namespace: CWAgent
+    Statistic: Maximum
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '80'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+            - Name: path
+              Value: '/'
+            - Name: device
+              Value: 'rootfs'
+            - Name: fstype
+              Value: 'rootfs'
+            - Name: ImageId
+              Value: !Ref ImageId
+            - Name: InstanceType
+              Value: !Ref InstanceType
+ diskiotimeHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: Disk io consumed in milliseconds of Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'disk-alert' ] ]
+    MetricName: diskio_io_time
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'disk-io' , !Ref Severity1 ] ] 
+    Namespace: CWAgent
+    Statistic: Maximum
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '10'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+            - Name: name
+              Value: 'xvda'
+            - Name: ImageId
+              Value: !Ref ImageId
+            - Name: InstanceType
+              Value: !Ref InstanceType
+ diskioreadbyteHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High Disk io read bytes of Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'disk-alert' ] ]
+    MetricName: diskio_read_bytes
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'disk-io-read-byte' , !Ref Severity1 ] ] 
+    Namespace: CWAgent
+    Statistic: Maximum
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '50000000'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+            - Name: name
+              Value: 'xvda'
+            - Name: ImageId
+              Value: !Ref ImageId
+            - Name: InstanceType
+              Value: !Ref InstanceType
+ diskioreadHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High Disk io read of Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'disk-alert' ] ]
+    MetricName: diskio_reads
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'disk-io-read' , !Ref Severity1 ] ] 
+    Namespace: CWAgent
+    Statistic: Maximum
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '500'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+            - Name: name
+              Value: 'xvda'
+            - Name: ImageId
+              Value: !Ref ImageId
+            - Name: InstanceType
+              Value: !Ref InstanceType
+ diskiowriteHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High Disk io write of Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'disk-alert' ] ]
+    MetricName: diskio_writes
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'disk-io-write' , !Ref Severity1 ] ] 
+    Namespace: CWAgent
+    Statistic: Maximum
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '300'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+            - Name: name
+              Value: 'xvda'
+            - Name: ImageId
+              Value: !Ref ImageId
+            - Name: InstanceType
+              Value: !Ref InstanceType
+ diskiowritebyteHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High Disk io read write of Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'disk-alert' ] ]
+    MetricName: diskio_write_bytes
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'disk-io-write-byte' , !Ref Severity1 ] ] 
+    Namespace: CWAgent
+    Statistic: Maximum
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '25000000'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+            - Name: name
+              Value: 'xvda'
+            - Name: ImageId
+              Value: !Ref ImageId
+            - Name: InstanceType
+              Value: !Ref InstanceType
+ memusedpercentHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High Percent of memory used in Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'memory-alert' ] ]
+    MetricName: mem_used_percent
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'mem-used-percent' , !Ref Severity1 ] ] 
+    Namespace: CWAgent
+    Statistic: Average
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '80'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+            - Name: ImageId
+              Value: !Ref ImageId
+            - Name: InstanceType
+              Value: !Ref InstanceType
+ swapusedpercentHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High Percent of swap used in Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'memory-alert' ] ]
+    MetricName: swap_used_percent
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'swap-used-percent' , !Ref Severity1 ] ] 
+    Namespace: CWAgent
+    Statistic: Average
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '80'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+            - Name: ImageId
+              Value: !Ref ImageId
+            - Name: InstanceType
+              Value: !Ref InstanceType
+ netstattcptimewaitHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High time wait of network statistics used in Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'network-alert' ] ]
+    MetricName: netstat_tcp_time_wait
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'netstat-tcp-time-wait' , !Ref Severity1 ] ] 
+    Namespace: CWAgent
+    Statistic: Average
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '800'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+            - Name: ImageId
+              Value: !Ref ImageId
+            - Name: InstanceType
+              Value: !Ref InstanceType
+ netstattcpestablishedHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High time established of network tcp used in Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'network-alert' ] ]
+    MetricName: netstat_tcp_established
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'netstat-tcp-established' , !Ref Severity1 ] ] 
+    Namespace: CWAgent
+    Statistic: Average
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '800'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+            - Name: ImageId
+              Value: !Ref ImageId
+            - Name: InstanceType
+              Value: !Ref InstanceType
+ cpuusageidleHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High time CPU is in Idle state in Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'cpu-alert' ] ]
+    MetricName: cpu_usage_idle
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'cpu-idle' , !Ref Severity1 ] ] 
+    Namespace: CWAgent
+    Statistic: Maximum
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '30'
+    ComparisonOperator: LessThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+            - Name: ImageId
+              Value: !Ref ImageId
+            - Name: InstanceType
+              Value: !Ref InstanceType
+            - Name: cpu
+              Value: 'cpu0'
+ cpuusageiowaitHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High time CPU usage iowait in Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'cpu-alert' ] ]
+    MetricName: cpu_usage_iowait
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'cpu-iowait' , !Ref Severity1 ] ] 
+    Namespace: CWAgent
+    Statistic: Maximum
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '70'
+    ComparisonOperator: LessThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+            - Name: ImageId
+              Value: !Ref ImageId
+            - Name: InstanceType
+              Value: !Ref InstanceType
+            - Name: cpu
+              Value: 'cpu0'
+ cpuusagesystemHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High time CPU usage system in Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'cpu-alert' ] ]
+    MetricName: cpu_usage_system
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'cpu-system-usage' , !Ref Severity1 ] ] 
+    Namespace: CWAgent
+    Statistic: Maximum
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '70'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+            - Name: ImageId
+              Value: !Ref ImageId
+            - Name: InstanceType
+              Value: !Ref InstanceType
+            - Name: cpu
+              Value: 'cpu0'
+ cpuusageuserHigh:
+  Type: AWS::CloudWatch::Alarm
+  Properties:
+    AlarmDescription: High time CPU usage user in Instance
+    AlarmActions:
+       -
+        Fn::ImportValue: !Join [ "-" , [  !Ref Environment , !Ref ApplicationFunction , !Ref ApplicationDescription ,'cpu-alert' ] ]
+    MetricName: cpu_usage_system
+    AlarmName: !Join [ "-" , [ !Ref Environment , !Ref ApplicationDescription, 'cpu-user-usage' , !Ref Severity1 ] ] 
+    Namespace: CWAgent
+    Statistic: Maximum
+    Period: '300'
+    EvaluationPeriods: '1'
+    Threshold: '70'
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    Dimensions:
+            - Name: InstanceId
+              Value: !Ref EC2Instance
+            - Name: ImageId
+              Value: !Ref ImageId
+            - Name: InstanceType
+              Value: !Ref InstanceType
+            - Name: cpu
+              Value: 'cpu0'
+Outputs:
+  JumpHostSecurityGroup:
+    Description: Security Id for JumpHostSecurityGroup
+    Value: !Ref SecurityGroup
+    Export:
+            Name: !Join 
+                - '-'
+                -  - !Ref Environment
+                   - !Ref Region
+                   - Webserver-SG
+  InstanceId:
+    Description: InstanceId of the newly created EC2 instance
+    Value: !Ref EC2Instance
+  InstanceIPAddress:
+    Description: IP address of the newly created EC2 instance
+    Value: !Ref IPAddress

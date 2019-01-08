@@ -1,0 +1,235 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: SNS Tpoics for Cloudwatch Alarms
+Parameters:
+   Environment:
+    Type: String
+    Default: Dev   
+    MinLength: 1
+    MaxLength: 20
+    Description: >-
+      Enter The Environment
+    AllowedValues:
+        - Dev
+        - OAT
+        - UAT
+        - Pre-Production
+        - Production
+   ApplicationFunction:
+    Type: String
+    MinLength: 3
+    MaxLength: 26
+    Description: Select the key functionality of Application
+   ApplicationDescrption:
+    Type: String
+    MinLength: 3
+    MaxLength: 30
+    AllowedPattern: "^[a-zA-Z0-9]*"
+    Description: Enter Application descripion in few words
+   NT1EMAIL:
+    Type: String
+    Default: Vijaykborkar@outlook.com
+    Description: Email address to configure Notification Topic Endpoint     
+Resources:
+  DISKALERT01:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: DISK_ALERT
+      TopicName: !Join 
+            - '-'
+            - - !Ref Environment
+              - !Ref ApplicationFunction
+              - !Ref ApplicationDescrption
+              - disk-alert
+  SNSsubscription01:
+    Type: AWS::SNS::Subscription
+    Properties:
+     Endpoint: !Ref NT1EMAIL
+     Protocol: email
+     TopicArn: !Ref DISKALERT01
+  DISKALERT02:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: DISK_ALERT
+      TopicName: !Join 
+            - '-'
+            - - !Ref Environment
+              - !Ref ApplicationFunction
+              - !Ref ApplicationDescrption
+              - physicaldisk-alert
+  SNSsubscription02:
+    Type: AWS::SNS::Subscription
+    Properties:
+     Endpoint: !Ref NT1EMAIL
+     Protocol: email
+     TopicArn: !Ref DISKALERT02
+  NETALERT:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: NET_ALERT
+      TopicName: !Join 
+            - '-'
+            - - !Ref Environment
+              - !Ref ApplicationFunction
+              - !Ref ApplicationDescrption
+              - network-alert
+  SNSsubscription03:
+    Type: AWS::SNS::Subscription
+    Properties:
+     Endpoint: !Ref NT1EMAIL
+     Protocol: email
+     TopicArn: !Ref NETALERT
+  CPUALERT:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: CPU_ALERT
+      TopicName: !Join 
+            - '-'
+            - - !Ref Environment
+              - !Ref ApplicationFunction
+              - !Ref ApplicationDescrption
+              - cpu-alert
+  SNSsubscription04:
+    Type: AWS::SNS::Subscription
+    Properties:
+     Endpoint: !Ref NT1EMAIL
+     Protocol: email
+     TopicArn: !Ref CPUALERT
+  MEMALERT:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: MEM_ALERT
+      TopicName: !Join 
+            - '-'
+            - - !Ref Environment
+              - !Ref ApplicationFunction
+              - !Ref ApplicationDescrption
+              - memory-alert
+  SNSsubscription05:
+    Type: AWS::SNS::Subscription
+    Properties:
+     Endpoint: !Ref NT1EMAIL
+     Protocol: email
+     TopicArn: !Ref MEMALERT
+  TCPALERT:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: TCP_ALERT
+      TopicName: !Join 
+            - '-'
+            - - !Ref Environment
+              - !Ref ApplicationFunction
+              - !Ref ApplicationDescrption
+              - tcp-alert
+  SNSsubscription06:
+    Type: AWS::SNS::Subscription
+    Properties:
+     Endpoint: !Ref NT1EMAIL
+     Protocol: email
+     TopicArn: !Ref TCPALERT
+  EBSALERT:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: EBS_ALERT
+      TopicName: !Join 
+            - '-'
+            - - !Ref Environment
+              - !Ref ApplicationFunction
+              - !Ref ApplicationDescrption
+              - ebs-alert
+  SNSsubscription07:
+    Type: AWS::SNS::Subscription
+    Properties:
+     Endpoint: !Ref NT1EMAIL
+     Protocol: email
+     TopicArn: !Ref EBSALERT
+  STATALERT:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: STAT_ALERT
+      TopicName: !Join 
+            - '-'
+            - - !Ref Environment
+              - !Ref ApplicationFunction
+              - !Ref ApplicationDescrption
+              - status-alert
+  SNSsubscription08:
+    Type: AWS::SNS::Subscription
+    Properties:
+     Endpoint: !Ref NT1EMAIL
+     Protocol: email
+     TopicArn: !Ref STATALERT
+Outputs:
+  DiskAlertOutput01:
+    Value: !Ref DISKALERT01
+    Export:
+      Name: !Join
+        - '-'
+        - - !Ref Environment
+          - !Ref ApplicationFunction
+          - !Ref ApplicationDescrption
+          - 'disk-alert'
+  DiskAlertOutput02:
+    Value: !Ref DISKALERT01
+    Export:
+      Name: !Join
+        - '-'
+        - - !Ref Environment
+          - !Ref ApplicationFunction
+          - !Ref ApplicationDescrption
+          - 'physicaldisk-alert'
+  NetAlertOutput:
+    Value: !Ref NETALERT
+    Export:
+      Name: !Join
+        - '-'
+        - - !Ref Environment
+          - !Ref ApplicationFunction
+          - !Ref ApplicationDescrption
+          - 'network-alert'
+  CpuAlertOutput:
+    Value: !Ref CPUALERT
+    Export:
+      Name: !Join
+        - '-'
+        - - !Ref Environment
+          - !Ref ApplicationFunction
+          - !Ref ApplicationDescrption
+          - 'cpu-alert'
+  MemAlertOutput:
+    Value: !Ref MEMALERT
+    Export:
+      Name: !Join
+        - '-'
+        - - !Ref Environment
+          - !Ref ApplicationFunction
+          - !Ref ApplicationDescrption
+          - 'memory-alert'
+  TcpAlertOutput:
+    Value: !Ref TCPALERT
+    Export:
+      Name: !Join
+        - '-'
+        - - !Ref Environment
+          - !Ref ApplicationFunction
+          - !Ref ApplicationDescrption
+          - 'tcp-alert'
+  EbsAlertOutput:
+    Value: !Ref EBSALERT
+    Export:
+      Name: !Join
+        - '-'
+        - - !Ref Environment
+          - !Ref ApplicationFunction
+          - !Ref ApplicationDescrption
+          - 'ebs-alert'
+  StatusAlertOutput:
+    Value: !Ref STATALERT
+    Export:
+      Name: !Join
+        - '-'
+        - - !Ref Environment
+          - !Ref ApplicationFunction
+          - !Ref ApplicationDescrption
+          - 'status-alert'
+
