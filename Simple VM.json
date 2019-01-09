@@ -48,6 +48,14 @@
 				"description": "Location for all resources."
 			}
 		}
+	  "Resource Group": {
+			"type": "string",
+			"defaultVaules": "RG-CR07"
+			"metadata": {
+				"description": "Location for all resources."
+			}
+		}
+	  
 	},
 	"variables": {
 		"storageAccountName": "[concat(uniquestring(resourceGroup().id), 'sawinvm')]",
