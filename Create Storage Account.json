@@ -1,0 +1,62 @@
+{
+  "name": "string",
+  "type": "Microsoft.Storage/storageAccounts",
+  "apiVersion": "2018-07-01",
+  "sku": {
+    "name": "string",
+    "restrictions": [
+      {
+        "reasonCode": "string"
+      }
+    ]
+  },
+  "kind": "string",
+  "location": "string",
+  "tags": {},
+  "identity": {
+    "type": "SystemAssigned"
+  },
+  "properties": {
+    "customDomain": {
+      "name": "string",
+      "useSubDomain": boolean
+    },
+    "encryption": {
+      "services": {
+        "blob": {
+          "enabled": boolean
+        },
+        "file": {
+          "enabled": boolean
+        }
+      },
+      "keySource": "string",
+      "keyvaultproperties": {
+        "keyname": "string",
+        "keyversion": "string",
+        "keyvaulturi": "string"
+      }
+    },
+    "networkAcls": {
+      "bypass": "string",
+      "virtualNetworkRules": [
+        {
+          "id": "string",
+          "action": "Allow",
+          "state": "string"
+        }
+      ],
+      "ipRules": [
+        {
+          "value": "string",
+          "action": "Allow"
+        }
+      ],
+      "defaultAction": "string"
+    },
+    "accessTier": "string",
+    "azureFilesAadIntegration": boolean,
+    "supportsHttpsTrafficOnly": boolean,
+    "isHnsEnabled": boolean
+  }
+}
