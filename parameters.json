@@ -1,0 +1,24 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "value": "westeurope"
+        },
+        "storageAccountName": {
+            "value": "storageaccount07"
+        },
+        "accountType": {
+            "value": "Standard_GRS"
+        },
+        "kind": {
+            "value": "BlobStorage"
+        },
+        "accessTier": {
+            "value": "Cool"
+        },
+        "supportsHttpsTrafficOnly": {
+            "value": true
+        }
+    }
+}
