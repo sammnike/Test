@@ -10,10 +10,18 @@
 			"type": "string"
 		},
 		"kind": {
+			"allowedValues": [
+				"StorageV2 (general purpose v2)",
+				"Storage (general purpose v1)",
+				"blob storage"
+			],
 			"type": "string"
 		},
 		"accessTier": {
-			"accessTier": "Cold",
+			"allowedValues": [
+				"Hot",
+				"Cold"
+			],
 			"type": "string"
 		},
 		"supportsHttpsTrafficOnly": {
