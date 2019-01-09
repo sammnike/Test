@@ -50,7 +50,7 @@
 		},
 		"Resource Group": {
 			"type": "string",
-			"defaultVaule": "RG-CR07",
+			"defaultValue": "RG-CR07",
 			"metadata": {
 				"description": "Location for all resources."
 			}
