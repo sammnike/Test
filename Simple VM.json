@@ -47,15 +47,7 @@
 			"metadata": {
 				"description": "Location for all resources."
 			}
-		},
-		"Resource Group": {
-			"type": "string",
-			"defaultValue" : "cicd-messi10",
-			"metadata": {
-				"description": "Location for all resources."
-			}
 		}
-
 	},
 	"variables": {
 		"storageAccountName": "[concat(uniquestring(resourceGroup().id), 'sawinvm')]",
