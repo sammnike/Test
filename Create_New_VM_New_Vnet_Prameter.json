@@ -1,0 +1,110 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "value": "southindia"
+        },
+        "networkInterfaceName": {
+            "value": "vm-1830"
+        },
+        "networkSecurityGroupName": {
+            "value": "VM-1-nsg"
+        },
+        "networkSecurityGroupRules": {
+            "value": [
+                {
+                    "name": "RDP",
+                    "properties": {
+                        "priority": 300,
+                        "protocol": "TCP",
+                        "access": "Allow",
+                        "direction": "Inbound",
+                        "sourceAddressPrefix": "*",
+                        "sourcePortRange": "*",
+                        "destinationAddressPrefix": "*",
+                        "destinationPortRange": "3389"
+                    }
+                },
+                {
+                    "name": "HTTP",
+                    "properties": {
+                        "priority": 320,
+                        "protocol": "TCP",
+                        "access": "Allow",
+                        "direction": "Inbound",
+                        "sourceAddressPrefix": "*",
+                        "sourcePortRange": "*",
+                        "destinationAddressPrefix": "*",
+                        "destinationPortRange": "80"
+                    }
+                },
+                {
+                    "name": "HTTPS",
+                    "properties": {
+                        "priority": 340,
+                        "protocol": "TCP",
+                        "access": "Allow",
+                        "direction": "Inbound",
+                        "sourceAddressPrefix": "*",
+                        "sourcePortRange": "*",
+                        "destinationAddressPrefix": "*",
+                        "destinationPortRange": "443"
+                    }
+                },
+                {
+                    "name": "SSH",
+                    "properties": {
+                        "priority": 360,
+                        "protocol": "TCP",
+                        "access": "Allow",
+                        "direction": "Inbound",
+                        "sourceAddressPrefix": "*",
+                        "sourcePortRange": "*",
+                        "destinationAddressPrefix": "*",
+                        "destinationPortRange": "22"
+                    }
+                }
+            ]
+        },
+        "virtualNetworkName": {
+            "value": "RG-1-vnet"
+        },
+        "addressPrefix": {
+            "value": "10.0.0.0/24"
+        },
+        "subnetName": {
+            "value": "Subnet-1"
+        },
+        "subnetPrefix": {
+            "value": "10.0.0.0/24"
+        },
+        "publicIpAddressName": {
+            "value": "VM-1-ip"
+        },
+        "publicIpAddressType": {
+            "value": "Dynamic"
+        },
+        "publicIpAddressSku": {
+            "value": "Basic"
+        },
+        "virtualMachineName": {
+            "value": "VM-1"
+        },
+        "virtualMachineRG": {
+            "value": "RG-1"
+        },
+        "osDiskType": {
+            "value": "Standard_LRS"
+        },
+        "virtualMachineSize": {
+            "value": "Standard_D2_v3"
+        },
+        "adminUsername": {
+            "value": "shadab"
+        },
+        "adminPassword": {
+            "value": "Microsoft@123"
+        }
+    }
+}
