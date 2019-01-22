@@ -1,0 +1,27 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "value": "westindia"
+        },
+        "name": {
+            "value": "WIND-VPN-Gateway"
+        },
+        "sku": {
+            "value": "VpnGw1"
+        },
+        "gatewayType": {
+            "value": "Vpn"
+        },
+        "vpnType": {
+            "value": "RouteBased"
+        },
+        "subnetId": {
+            "value": "/subscriptions/e0f35225-782a-4617-8798-bc6424eaa892/resourceGroups/RG-WIND/providers/Microsoft.Network/virtualNetworks/Vnet-WIND/subnets/GatewaySubnet"
+        },
+        "newPublicIpAddressName": {
+            "value": "wind-gateway-ip"
+        }
+    }
+}

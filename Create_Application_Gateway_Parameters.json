@@ -1,0 +1,48 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "value": "westindia"
+        },
+        "applicationGatewayName": {
+            "value": "Shadab-APP-GW"
+        },
+        "tier": {
+            "value": "Standard"
+        },
+        "skuSize": {
+            "value": "Standard_Medium"
+        },
+        "capacity": {
+            "value": 2
+        },
+        "frontEndPort": {
+            "value": 80
+        },
+        "subnetName": {
+            "value": "GatewaySubnet"
+        },
+        "enableHttp2": {
+            "value": false
+        },
+        "zones": {
+            "value": []
+        },
+        "publicIpAddressName": {
+            "value": "Shadab-APP-GW-ip"
+        },
+        "sku": {
+            "value": "Basic"
+        },
+        "allocationMethod": {
+            "value": "Dynamic"
+        },
+        "publicIpZones": {
+            "value": []
+        },
+        "idleTimeoutInMinutes": {
+            "value": 4
+        }
+    }
+}
