@@ -8,7 +8,7 @@
     },
     "rgName": {
       "type": "string",
-      "defaultValue": "cicd-messi10"
+      "defaultValue": "cicd-CR7"
     }
   },
   "variables": {},
